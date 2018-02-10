@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sat Feb 10 11:38:16 2018
-@author: Aayush - Carlson
+@author: Aayush Agrawal
 @Purpose - Re-usable code in Python 3 for general pre-processing in modeling process
 """
 
