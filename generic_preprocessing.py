@@ -1,7 +1,7 @@
 """
 Created on Sat Feb 10 11:38:16 2018
 @author: Aayush Agrawal
-@Purpose - Re-usable code in Python 3 for general pre-processing in modeling process
+@Purpose - Re-usable code in Python 3 for general data exploration and pre-processing in modeling process
 """
 
 ## Importing required libraries
@@ -11,6 +11,7 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder, Sta
 import pandas_profiling ## For easy profiling of pandas DataFrame
 import missingno as msno ## Missing value co-occurance analysis
 
+####### Data Exploration ############
 def print_dim(df):
     '''
     Function to print the dimensions of a given python dataframe
@@ -61,7 +62,8 @@ def missing_value_analysis(df):
     '''
     msno.matrix(df)
     msno.heatmap(df)
-    
+
+####### Pre-processing ############    
 def drop_allsame(df):
     '''
     Function to remove any columns which have same value all across
