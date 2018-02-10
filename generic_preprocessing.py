@@ -5,9 +5,11 @@ Created on Sat Feb 10 11:38:16 2018
 """
 
 ## Importing required libraries
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder, StandardScaler
+import pandas as pd ## For DataFrame operation
+import numpy as np ## Numerical python for matrix operations
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder, StandardScaler ## Preprocessing function
+import pandas_profiling ## For easy profiling of pandas DataFrame
+import missingno as msno ## Missing value co-occurance analysis
 
 def print_dim(df):
     '''
@@ -35,6 +37,31 @@ def print_dataunique(df):
         x = df.loc[:,i].unique()
         print(i,type(df.loc[0,i]), len(x), x[0:5])
         
+def do_data_profiling(df, filename):
+    '''
+    Function to do basic data profiling
+    Required Input - 
+        - df = Pandas DataFrame
+        - filename = Path for output file with a .html extension
+    Expected Output -
+        - HTML file with data profiling summary
+    '''
+    profile = pandas_profiling.ProfileReport(df)
+    profile.to_file(outputfile = filename)
+    print("Data profiling done")
+
+def missing_value_analysis(df):
+    '''
+    Function to do basic missing value analysis
+    Required Input - 
+        - df = Pandas DataFrame
+    Expected Output -
+        - Chart of Missing value co-occurance
+        - Chart of Missing value heatmap
+    '''
+    msno.matrix(df)
+    msno.heatmap(df)
+    
 def drop_allsame(df):
     '''
     Function to remove any columns which have same value all across
@@ -107,6 +134,7 @@ def one_hot_encoder(df, columns):
         - df = Pandas DataFrame with one-hot encoded columns
     '''
     for each in columns:
+        print("One-Hot encoding column - {0}".format(each))
         dummies = pd.get_dummies(df[each], prefix=each, drop_first=False)
         df = pd.concat([df, dummies], axis=1)
     return df.drop(columns,axis = 1)
