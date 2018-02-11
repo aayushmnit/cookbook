@@ -7,7 +7,7 @@ Created on Sat Feb 10 11:38:16 2018
 ## Importing required libraries
 import pandas as pd ## For DataFrame operation
 import numpy as np ## Numerical python for matrix operations
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder, StandardScaler ## Preprocessing function
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler ## Preprocessing function
 import pandas_profiling ## For easy profiling of pandas DataFrame
 import missingno as msno ## Missing value co-occurance analysis
 

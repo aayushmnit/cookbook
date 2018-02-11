@@ -21,7 +21,33 @@ from sklearn.ensemble import ExtraTreesClassifier,RandomForestClassifier
 import xgboost as xgb ## Xgboost for regression and classfication
 import lightgbm as lgb ## Light GBM for regression and classification
 
-####### Algorithms For Binary classification #########
+########### Cross Validation ###########
+### 1) Train test split
+def holdout_cv(X,y,size = 0.3, seed = 1):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
+    return X_train, X_test, y_train, y_test
+
+### 2) Cross-Validation (K-Fold)
+def kfold_cv(X,n_folds = 5, seed = 1):
+    cv = KFold(n_splits = n_folds, random_state = seed, shuffle = True)
+    return cv.split(X)
+
+########### Model Explanation ###########
+## Variable Importance plot
+def feature_importance(model,X):
+    feature_importance = model.feature_importances_
+    feature_importance = 100.0 * (feature_importance / feature_importance.max())
+    sorted_idx = np.argsort(feature_importance)
+    pos = np.arange(sorted_idx.shape[0]) + .5
+    plt.figure(figsize=(15, 15))
+    plt.subplot(1, 2, 2)
+    plt.barh(pos, feature_importance[sorted_idx], align='center')
+    plt.yticks(pos, X.columns[sorted_idx])
+    plt.xlabel('Relative Importance')
+    plt.title('Variable Importance')
+    plt.show()
+    
+########### Algorithms For Binary classification ###########
  
 ### Running Xgboost
 def create_feature_map(features):
@@ -208,29 +234,3 @@ def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, kernel_ch
     test_loss = metrics.log_loss(test_y, test_preds)
     print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
-
-########### Cross Validation #######################
-### 1) Train test split
-def holdout_cv(X,y,size = 0.3, seed = 1):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
-    return X_train, X_test, y_train, y_test
-
-### 2) Cross-Validation (K-Fold)
-def kfold_cv(X,n_folds = 5, seed = 1):
-    cv = KFold(n_splits = n_folds, random_state = seed, shuffle = True)
-    return cv.split(X)
-
-## Variable Importance plot
-def feature_importance(model,X):
-    feature_importance = model.feature_importances_
-    feature_importance = 100.0 * (feature_importance / feature_importance.max())
-    sorted_idx = np.argsort(feature_importance)
-    pos = np.arange(sorted_idx.shape[0]) + .5
-    plt.figure(figsize=(15, 15))
-    plt.subplot(1, 2, 2)
-    plt.barh(pos, feature_importance[sorted_idx], align='center')
-    plt.yticks(pos, X.columns[sorted_idx])
-    plt.xlabel('Relative Importance')
-    plt.title('Variable Importance')
-    plt.show()
-
