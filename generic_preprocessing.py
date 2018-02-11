@@ -1,5 +1,4 @@
 """
-Created on Sat Feb 10 11:38:16 2018
 @author: Aayush Agrawal
 @Purpose - Re-usable code in Python 3 for general data exploration and pre-processing in modeling process
 """
