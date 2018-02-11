@@ -9,13 +9,15 @@ import pandas as pd ## For DataFrame operation
 import numpy as np ## Numerical python for matrix operations
 from sklearn.model_selection import KFold, train_test_split ## Creating cross validation sets
 from sklearn import metrics ## For loss functions
+import operator
+import matplotlib.pyplot as plt
 
 ## Libraries for Classification algorithms
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from ensemble import ExtraTreesClassifier,RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier,RandomForestClassifier
 import xgboost as xgb ## Xgboost for regression and classfication
 import lightgbm as lgb ## Light GBM for regression and classification
 
@@ -37,7 +39,6 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
 	params["min_child_weight"] = 1
 	params["colsample_bytree"] = 0.7
 	params["max_depth"] = dep
-
 	params["silent"] = 1
 	params["seed"] = seed_val
 	#params["max_delta_step"] = 2
@@ -89,7 +90,6 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
 	params["verbosity"] = 0
 	num_rounds = rounds
 
-	plst = list(params.items())
 	lgtrain = lgb.Dataset(train_X, label=train_y)
 
 	if test_y is not None:
@@ -105,7 +105,7 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
 	loss = 0
 	if test_y is not None:
 		loss = metrics.roc_auc_score(test_y, pred_test_y)
-		print loss
+		print(loss)
 		return pred_test_y, loss, pred_test_y2, model
 	else:
 		return pred_test_y, loss, pred_test_y2, model
@@ -128,13 +128,13 @@ def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10
 	if test_y is not None:
 		train_loss = metrics.roc_auc_score(train_y, train_preds)
 		test_loss = metrics.roc_auc_score(test_y, test_preds)
-		print "Depth, leaf, feat : ", depth, leaf, feat
-		print "Train and Test loss : ", train_loss, test_loss
+		print("Depth, leaf, feat : ", depth, leaf, feat)
+		print("Train and Test loss : ", train_loss, test_loss)
 	return test_preds, test_loss, test_preds2, model
  
  ### Running Random Forest
- def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
-    model = ensemble.RandomForestClassifier(
+def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
+    model = RandomForestClassifier(
             n_estimators = 1000,
                     max_depth = depth,
                     min_samples_split = 2,
@@ -150,16 +150,11 @@ def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10
     
     train_loss = metrics.log_loss(train_y, train_preds)
     test_loss = metrics.log_loss(test_y, test_preds)
-    print "Train and Test loss : ", train_loss, test_loss
+    print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-
  ### Running Logistic Regression
- def runLR(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, penalty ='l1'):
+def runLR(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, penalty ='l1'):
     model = LogisticRegression(C=C, penalty=penalty, n_jobs=-1)
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
@@ -169,7 +164,7 @@ from sklearn.svm import SVC
     
     train_loss = metrics.log_loss(train_y, train_preds)
     test_loss = metrics.log_loss(test_y, test_preds)
-    print "Train and Test loss : ", train_loss, test_loss
+    print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
 ### Running Decision Tree
@@ -183,7 +178,7 @@ def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='gini',
     
     train_loss = metrics.log_loss(train_y, train_preds)
     test_loss = metrics.log_loss(test_y, test_preds)
-    print "Train and Test loss : ", train_loss, test_loss
+    print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
     
 ### Running K-Nearest Neighbour
@@ -197,7 +192,7 @@ def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5):
     
     train_loss = metrics.log_loss(train_y, train_preds)
     test_loss = metrics.log_loss(test_y, test_preds)
-    print "Train and Test loss : ", train_loss, test_loss
+    print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
 ### Running K-Nearest Neighbour
@@ -211,32 +206,22 @@ def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, kernel_ch
     
     train_loss = metrics.log_loss(train_y, train_preds)
     test_loss = metrics.log_loss(test_y, test_preds)
-    print "Train and Test loss : ", train_loss, test_loss
+    print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
 ########### Cross Validation #######################
 ### 1) Train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=46)
-pred_val, loss, pred_test, model = runXGB(train_X = X_train, train_y = y_train,
-                                          test_X = X_test, test_y = y_test,
-                                          rounds=5000, dep=8)
-print("K-Fold Loss = {0}".format(np.mean(loss_list)))
+def holdout_cv(X,y,size = 0.3, seed = 1):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
+    return X_train, X_test, y_train, y_test
 
 ### 2) Cross-Validation (K-Fold)
-cv = cross_validation.KFold(len(X), n_folds=5, shuffle=True, random_state=46)
-loss_list = []
-for traincv, testcv in cv:
-    pred_val, loss, pred_test, model = runXGB(train_X = X.ix[traincv,:], train_y = y[traincv],
-                                              test_X = X.ix[testcv,:], test_y = y[testcv],
-                                              rounds=5000, dep=8)
-    loss_list.append(loss)
-print("K-Fold Loss = {0}".format(np.mean(loss_list)))
+def kfold_cv(X,n_folds = 5, seed = 1):
+    cv = KFold(n_splits = n_folds, random_state = seed, shuffle = True)
+    return cv.split(X)
 
 ## Variable Importance plot
-def feature_importance(model):
-    """
-    Plots the feature importance for an ensemble model
-    """
+def feature_importance(model,X):
     feature_importance = model.feature_importances_
     feature_importance = 100.0 * (feature_importance / feature_importance.max())
     sorted_idx = np.argsort(feature_importance)
