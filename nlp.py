@@ -15,7 +15,7 @@ def word_grams(words, min=1, max=4):
             s.append(' '.join(str(i) for i in ngram))
     return s
     
-def make_worlcloud(df,column, bg_color='white', w=600, h=300, font_size_max=100, n_words=40,g_min=1,g_max=1):
+def make_worlcloud(df,column, bg_color='white', w=1200, h=1000, font_size_max=50, n_words=40,g_min=1,g_max=1):
     '''
     Function to make wordcloud from a text corpus
     Required Input -
@@ -46,6 +46,7 @@ def make_worlcloud(df,column, bg_color='white', w=600, h=300, font_size_max=100,
                           max_font_size=font_size_max, \
                           max_words=n_words).generate(s)
     wordcloud.recolor(random_state=1)
+    plt.rcParams['figure.figsize'] = (20.0, 10.0)
     plt.imshow(wordcloud)
     plt.axis("off")
     plt.show()
