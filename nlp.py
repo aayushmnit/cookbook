@@ -32,14 +32,17 @@ def make_worlcloud(df,column, bg_color='white', w=1200, h=1000, font_size_max=50
         - World cloud image
     '''
     text = ""
-    for ind, row in df.iterrows():
+    for ind, row in df.iterrows(): 
         text += row[column] + " "
-    text = text.strip().split(' ')
+    text = text.strip().split(' ') 
     text = word_grams(text,g_min,g_max)
+    
     text = list(pd.Series(word_grams(text,1,2)).apply(lambda x: x.replace(' ','_')))
+    
     s = ""
     for i in range(len(text)):
         s += text[i] + " "
+
     wordcloud = WordCloud(background_color=bg_color, \
                           width=w, \
                           height=h, \
