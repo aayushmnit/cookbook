@@ -4,14 +4,33 @@
 """
 import pandas as pd
 import numpy as np
-from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import re
+import string
+import nltk
 from nltk.util import ngrams
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem.porter import PorterStemmer
+from nltk.stem.wordnet import WordNetLemmatizer
 
-def word_grams(words, min=1, max=4):
+eng_stop = set(stopwords.words('english'))
+
+
+def word_grams(text, min=1, max=4):
+    '''
+    Function to create N-grams from text
+    Required Input -
+        - text = text string for which N-gram needs to be created
+        - min = minimum number of N
+        - max = maximum number of N
+    Expected Output -
+        - s = list of N-grams 
+    '''
     s = []
     for n in range(min, max+1):
-        for ngram in ngrams(words, n):
+        for ngram in ngrams(text, n):
             s.append(' '.join(str(i) for i in ngram))
     return s
     
@@ -53,3 +72,66 @@ def make_worlcloud(df,column, bg_color='white', w=1200, h=1000, font_size_max=50
     plt.imshow(wordcloud)
     plt.axis("off")
     plt.show()
+    
+
+def get_tokens(text):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - text - text string which needs to be tokenized
+    Expected Output -
+        - text - tokenized list output
+    '''
+    return word_tokenize(text)
+
+def convert_lowercase(text):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - text - text string which needs to be lowercased
+    Expected Output -
+        - text - lower cased text string output
+    '''
+    return text.lower()
+
+def remove_punctuations(text):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - text - text string 
+    Expected Output -
+        - text - text string with punctuation removed
+    '''
+    return text.translate(None,string.punctuation)
+
+def remove_stopwords(text):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - text - text string which needs to be tokenized
+    Expected Output -
+        - text - list output with stopwords removed
+    '''
+    return [word for word in text.split() if word not in eng_stop]
+    
+def convert_stemmer(word):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - word - word which needs to be tokenized
+    Expected Output -
+        - text - word output after stemming
+    '''
+    porter_stemmer = PorterStemmer()
+    return porter_stemmer.stem(word)
+
+def convert_lemmatizer(word):
+    '''
+    Function to tokenize the text
+    Required Input - 
+        - word - word which needs to be lemmatized
+    Expected Output -
+        - word - word output after lemmatizing
+    '''
+    wordnet_lemmatizer = WordNetLemmatizer()
+    return wordnet_lemmatizer.lemmatize(word)
