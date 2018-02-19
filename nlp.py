@@ -14,6 +14,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
 eng_stop = set(stopwords.words('english'))
 
@@ -135,3 +136,61 @@ def convert_lemmatizer(word):
     '''
     wordnet_lemmatizer = WordNetLemmatizer()
     return wordnet_lemmatizer.lemmatize(word)
+    
+def create_tf_idf(df, column, train_df = None, test_df = None,n_features = None):
+    '''
+    Function to do tf-idf on a pandas dataframe
+    Required Input -
+        - df = Pandas DataFrame
+        - column = name of column containing text
+        - train_df(optional) = Train DataFrame
+        - test_df(optional) = Test DataFrame
+        - n_features(optional) = Maximum number of features needed
+    Expected Output -
+        - train_tfidf = train tf-idf sparse matrix output
+        - test_tfidf = test tf-idf sparse matrix output
+        - tfidf_obj = tf-idf model
+    '''
+    tfidf_obj = TfidfVectorizer(ngram_range=(1,1), stop_words='english', 
+                                analyzer='word', max_features = n_features)
+    tfidf_text = tfidf_obj.fit_transform(df.ix[:,column].values)
+    
+    if train_df is not None:        
+        train_tfidf = tfidf_obj.transform(train_df.ix[:,column].values)
+    else:
+        train_tfidf = tfidf_text
+
+    test_tfidf = None
+    if test_df is not None:
+        test_tfidf = tfidf_obj.transform(test_df.ix[:,column].values)
+
+    return train_tfidf, test_tfidf, tfidf_obj
+    
+def create_countvector(df, column, train_df = None, test_df = None,n_features = None):
+    '''
+    Function to do count vectorizer on a pandas dataframe
+    Required Input -
+        - df = Pandas DataFrame
+        - column = name of column containing text
+        - train_df(optional) = Train DataFrame
+        - test_df(optional) = Test DataFrame
+        - n_features(optional) = Maximum number of features needed
+    Expected Output -
+        - train_cvect = train count vectorized sparse matrix output
+        - test_cvect = test count vectorized sparse matrix output
+        - cvect_obj = count vectorized model
+    '''
+    cvect_obj = CountVectorizer(ngram_range=(1,1), stop_words='english', 
+                                analyzer='word', max_features = n_features)
+    cvect_text = cvect_obj.fit_transform(df.ix[:,column].values)
+    
+    if train_df is not None:
+        train_cvect = cvect_obj.transform(train_df.ix[:,column].values)
+    else:
+        train_cvect = cvect_text
+        
+    test_cvect = None
+    if test_df is not None:
+        test_cvect = cvect_obj.transform(test_df.ix[:,column].values)
+
+    return train_cvect, test_cvect, cvect_obj
