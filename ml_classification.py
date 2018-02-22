@@ -87,6 +87,33 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, roun
     else:
         return pred_test_y, loss, pred_test_y2, model
 
+### Running Xgboost classifier for model explaination
+def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+    model = xgb.XGBClassifier(objective="binary:logistic",
+                              learning_rate=eta,
+                              subsample=0.7,
+                              min_child_weight=1,
+                              colsample_bytree=0.7,
+                              max_depth=dep,
+                              silent=1,
+                              seed=seed_val,
+                              n_estimators=rounds)
+
+    model.fit(train_X, train_y)
+    train_preds = model.predict_proba(train_X)[:,1]
+    test_preds = model.predict_proba(test_X)[:,1]
+    
+    test_preds2 = 0
+    if test_X2 is not None:
+        test_preds2 = model.predict_proba(test_X2)[:,1]
+
+    test_loss = 0
+    if test_y is not None:
+        train_loss = metrics.roc_auc_score(train_y, train_preds)
+        test_loss = metrics.roc_auc_score(test_y, test_preds)
+        print("Train and Test loss : ", train_loss, test_loss)
+    return test_preds, test_loss, test_preds2, model
+
 ### Running LightGBM
 def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0, rounds=500, dep=8, eta=0.05):
     params = {}

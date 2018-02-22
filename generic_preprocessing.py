@@ -33,9 +33,11 @@ def print_dataunique(df):
         - Number of unique values in that column
         - 5 unique values from that column
     '''
+    counter = 0
     for i in df.columns:
         x = df.loc[:,i].unique()
-        print(i,type(df.loc[0,i]), len(x), x[0:5])
+        print(counter,i,type(df.loc[0,i]), len(x), x[0:5])
+        counter +=1
         
 def do_data_profiling(df, filename):
     '''
