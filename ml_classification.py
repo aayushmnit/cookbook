@@ -48,16 +48,17 @@ def feature_importance(model,X):
 ########### Algorithms For Binary classification ###########
  
 ### Running Xgboost
-def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+           min_child_weight_val=1, silent_val = 1):
     params = {}
     params["objective"] = "binary:logistic"
     params['eval_metric'] = 'auc'
     params["eta"] = eta
-    params["subsample"] = 0.7
-    params["min_child_weight"] = 1
-    params["colsample_bytree"] = 0.7
+    params["subsample"] = sub_sample
+    params["min_child_weight"] = min_child_weight_val
+    params["colsample_bytree"] = col_sample
     params["max_depth"] = dep
-    params["silent"] = 1
+    params["silent"] = silent_val
     params["seed"] = seed_val
     #params["max_delta_step"] = 2
     #params["gamma"] = 0.5
@@ -88,14 +89,15 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, roun
         return pred_test_y, loss, pred_test_y2, model
 
 ### Running Xgboost classifier for model explaination
-def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+           min_child_weight_val=1, silent_val = 1):
     model = xgb.XGBClassifier(objective="binary:logistic",
                               learning_rate=eta,
-                              subsample=0.7,
-                              min_child_weight=1,
-                              colsample_bytree=0.7,
+                              subsample=sub_sample,
+                              min_child_weight=child_weight,
+                              colsample_bytree=col_sample,
                               max_depth=dep,
-                              silent=1,
+                              silent=silent_val,
                               seed=seed_val,
                               n_estimators=rounds)
 
@@ -115,18 +117,19 @@ def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
     return test_preds, test_loss, test_preds2, model
 
 ### Running LightGBM
-def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+          silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
     params = {}
     params["objective"] = "binary"
     params['metric'] = 'auc'
     params["max_depth"] = dep
-    params["min_data_in_leaf"] = 20
+    params["min_data_in_leaf"] = min_data_in_leaf_val
     params["learning_rate"] = eta
-    params["bagging_fraction"] = 0.7
-    params["feature_fraction"] = 0.7
-    params["bagging_freq"] = 5
+    params["bagging_fraction"] = sub_sample
+    params["feature_fraction"] = col_sample
+    params["bagging_freq"] = bagging_freq
     params["bagging_seed"] = seed_val
-    params["verbosity"] = 0
+    params["verbosity"] = silent_val
     num_rounds = rounds
     
     lgtrain = lgb.Dataset(train_X, label=train_y)
@@ -151,6 +154,34 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
         return pred_test_y, loss, pred_test_y2, model
     else:
         return pred_test_y, loss, pred_test_y2, model
+
+### Running LightGBM classifier for model explaination
+def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+          silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
+    model = lgb.LGBMClassifier(max_depth=dep,
+                   learning_rate=eta,
+                   min_data_in_leaf=min_data_in_leaf_val,
+                  bagging_fraction = sub_sample,
+                  feature_fraction = col_sample,
+                  bagging_freq = bagging_freq,
+                  bagging_seed = seed_val,
+                  verbosity = silent_val,
+                  num_rounds = rounds)
+
+    model.fit(train_X, train_y)
+    train_preds = model.predict_proba(train_X)[:,1]
+    test_preds = model.predict_proba(test_X)[:,1]
+    
+    test_preds2 = 0
+    if test_X2 is not None:
+        test_preds2 = model.predict_proba(test_X2)[:,1]
+
+    test_loss = 0
+    if test_y is not None:
+        train_loss = metrics.roc_auc_score(train_y, train_preds)
+        test_loss = metrics.roc_auc_score(test_y, test_preds)
+        print("Train and Test loss : ", train_loss, test_loss)
+    return test_preds, test_loss, test_preds2, model
 
 ### Running Extra Trees  
 def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
