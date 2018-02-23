@@ -23,6 +23,8 @@ from sklearn.ensemble import ExtraTreesRegressor,RandomForestRegressor
 ### 1) Train test split
 def holdout_cv(X,y,size = 0.3, seed = 1):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
+    X_train = X_train.reset_index(drop='index')
+    X_test = X_test.reset_index(drop='index')
     return X_train, X_test, y_train, y_test
 
 ### 2) Cross-Validation (K-Fold)
@@ -48,16 +50,18 @@ def feature_importance(model,X):
 ########### Algorithms For Regression ###########
 
 ### Running Xgboost
-def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, 
+           rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+           min_child_weight_val=1, silent_val = 1):
     params = {}
     params["objective"] = "reg:linear"
     params['eval_metric'] = 'rmse'
     params["eta"] = eta
-    params["subsample"] = 0.7
-    params["min_child_weight"] = 1
-    params["colsample_bytree"] = 0.7
+    params["subsample"] = sub_sample
+    params["min_child_weight"] = min_child_weight_val
+    params["colsample_bytree"] = col_sample
     params["max_depth"] = dep
-    params["silent"] = 1
+    params["silent"] = silent_val
     params["seed"] = seed_val
     #params["max_delta_step"] = 2
     #params["gamma"] = 0.5
@@ -88,18 +92,20 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, roun
         return pred_test_y, loss, pred_test_y2, model
         
 ### Running LightGBM
-def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0, rounds=500, dep=8, eta=0.05):
+def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, 
+           seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,
+           col_sample=0.7,silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
     params = {}
     params["objective"] = "regression"
     params['metric'] = 'rmse'
     params["max_depth"] = dep
-    params["min_data_in_leaf"] = 20
+    params["min_data_in_leaf"] = min_data_in_leaf_val
     params["learning_rate"] = eta
-    params["bagging_fraction"] = 0.7
-    params["feature_fraction"] = 0.7
-    params["bagging_freq"] = 5
+    params["bagging_fraction"] = sub_sample
+    params["feature_fraction"] = col_sample
+    params["bagging_freq"] = bagging_freq
     params["bagging_seed"] = seed_val
-    params["verbosity"] = 0
+    params["verbosity"] = silent_val
     num_rounds = rounds
     
     lgtrain = lgb.Dataset(train_X, label=train_y)
@@ -126,15 +132,16 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
         return pred_test_y, loss, pred_test_y2, model
         
 ### Running Extra Trees  
-def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
+def runET(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20,
+          leaf=10, feat=0.2, min_data_split_val=2,seed_val=0,job = -1):
 	model = ExtraTreesRegressor(
-			n_estimators = 100,
-					max_depth = depth,
-					min_samples_split = 2,
-					min_samples_leaf = leaf,
-					max_features =  feat,
-					n_jobs = 8,
-					random_state = 0)
+                                n_estimators = rounds,
+                                max_depth = depth,
+                                min_samples_split = min_data_split_val,
+                                min_samples_leaf = leaf,
+                                max_features =  feat,
+                                n_jobs = job,
+                                random_state = seed_val)
 	model.fit(train_X, train_y)
 	train_preds = model.predict(train_X)
 	test_preds = model.predict(test_X)
@@ -152,15 +159,16 @@ def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10
 	return test_preds, test_loss, test_preds2, model
  
 ### Running Random Forest
-def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
+def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20, leaf=10,
+          feat=0.2,min_data_split_val=2,seed_val=0,job = -1):
     model = RandomForestRegressor(
-            n_estimators = 1000,
-                    max_depth = depth,
-                    min_samples_split = 2,
-                    min_samples_leaf = leaf,
-                    max_features =  feat,
-                    n_jobs = 4,
-                    random_state = 0)
+                                n_estimators = rounds,
+                                max_depth = depth,
+                                min_samples_split = min_data_split_val,
+                                min_samples_leaf = leaf,
+                                max_features =  feat,
+                                n_jobs = job,
+                                random_state = seed_val)
     model.fit(train_X, train_y)
     train_preds = model.predict(train_X)
     test_preds = model.predict(test_X)
@@ -194,8 +202,13 @@ def runLR(train_X, train_y, test_X, test_y=None, test_X2=None):
     return test_preds, test_loss, test_preds2, model
 
 ### Running Decision Tree
-def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='mse', depth=None, min_split=2, min_leaf=1):
-    model = DecisionTreeRegressor(criterion = criterion, max_depth = depth, min_samples_split = min_split, min_samples_leaf=min_leaf)
+def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='mse', 
+          depth=None, min_split=2, min_leaf=1):
+    model = DecisionTreeRegressor(
+                                criterion = criterion, 
+                                max_depth = depth, 
+                                min_samples_split = min_split, 
+                                min_samples_leaf=min_leaf)
     model.fit(train_X, train_y)
     train_preds = model.predict(train_X)
     test_preds = model.predict(test_X)
@@ -212,8 +225,11 @@ def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='mse', 
     return test_preds, test_loss, test_preds2, model
     
 ### Running K-Nearest Neighbour
-def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5):
-    model = KNeighborsRegressor(n_neighbors=neighbors, n_jobs=-1)
+def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, 
+           neighbors=5, job = -1):
+    model = KNeighborsRegressor(
+                                n_neighbors=neighbors, 
+                                n_jobs=job)
     model.fit(train_X, train_y)
     train_preds = model.predict(train_X)
     test_preds = model.predict(test_X)
@@ -230,8 +246,12 @@ def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5):
     return test_preds, test_loss, test_preds2, model
 
 ### Running SVM
-def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, eps=0.1, kernel_choice = 'rbf'):
-    model = SVR(C=C, kernel=kernel_choice,  epsilon=eps)
+def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, 
+           eps=0.1, kernel_choice = 'rbf'):
+    model = SVR(
+                C=C, 
+                kernel=kernel_choice,  
+                epsilon=eps)
     model.fit(train_X, train_y)
     train_preds = model.predict(train_X)
     test_preds = model.predict(test_X)

@@ -23,6 +23,8 @@ import lightgbm as lgb
 ### 1) Train test split
 def holdout_cv(X,y,size = 0.3, seed = 1):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
+    X_train = X_train.reset_index(drop='index')
+    X_test = X_test.reset_index(drop='index')
     return X_train, X_test, y_train, y_test
 
 ### 2) Cross-Validation (K-Fold)
@@ -48,7 +50,8 @@ def feature_importance(model,X):
 ########### Algorithms For Binary classification ###########
  
 ### Running Xgboost
-def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, 
+           rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
            min_child_weight_val=1, silent_val = 1):
     params = {}
     params["objective"] = "binary:logistic"
@@ -89,12 +92,13 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, roun
         return pred_test_y, loss, pred_test_y2, model
 
 ### Running Xgboost classifier for model explaination
-def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-           min_child_weight_val=1, silent_val = 1):
+def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, 
+            rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+            min_child_weight_val=1, silent_val = 1):
     model = xgb.XGBClassifier(objective="binary:logistic",
                               learning_rate=eta,
                               subsample=sub_sample,
-                              min_child_weight=child_weight,
+                              min_child_weight=min_child_weight_val,
                               colsample_bytree=col_sample,
                               max_depth=dep,
                               silent=silent_val,
@@ -117,8 +121,9 @@ def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
     return test_preds, test_loss, test_preds2, model
 
 ### Running LightGBM
-def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-          silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
+def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0,
+           rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+           silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
     params = {}
     params["objective"] = "binary"
     params['metric'] = 'auc'
@@ -136,7 +141,8 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
     
     if test_y is not None:
         lgtest = lgb.Dataset(test_X, label=test_y)
-        model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtest], early_stopping_rounds=100, verbose_eval=20)
+        model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtest],
+                          early_stopping_rounds=100, verbose_eval=20)
     else:
         lgtest = lgb.DMatrix(test_X)
         model = lgb.train(params, lgtrain, num_rounds)
@@ -156,8 +162,9 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
         return pred_test_y, loss, pred_test_y2, model
 
 ### Running LightGBM classifier for model explaination
-def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-          silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
+def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500,
+            dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
+            silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
     model = lgb.LGBMClassifier(max_depth=dep,
                    learning_rate=eta,
                    min_data_in_leaf=min_data_in_leaf_val,
@@ -184,15 +191,16 @@ def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
     return test_preds, test_loss, test_preds2, model
 
 ### Running Extra Trees  
-def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
+def runET(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20, 
+          leaf=10, feat=0.2,min_data_split_val=2,seed_val=0,job = -1):
 	model = ExtraTreesClassifier(
-			n_estimators = 100,
+                    n_estimators = rounds,
 					max_depth = depth,
-					min_samples_split = 2,
+					min_samples_split = min_data_split_val,
 					min_samples_leaf = leaf,
 					max_features =  feat,
-					n_jobs = 8,
-					random_state = 0)
+					n_jobs = job,
+					random_state = seed_val)
 	model.fit(train_X, train_y)
 	train_preds = model.predict_proba(train_X)[:,1]
 	test_preds = model.predict_proba(test_X)[:,1]
@@ -210,15 +218,16 @@ def runET(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10
 	return test_preds, test_loss, test_preds2, model
  
 ### Running Random Forest
-def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, depth=20, leaf=10, feat=0.2):
+def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20, leaf=10, 
+          feat=0.2,min_data_split_val=2,seed_val=0,job = -1):
     model = RandomForestClassifier(
-            n_estimators = 1000,
+                    n_estimators = rounds,
                     max_depth = depth,
-                    min_samples_split = 2,
+                    min_samples_split = min_data_split_val,
                     min_samples_leaf = leaf,
                     max_features =  feat,
-                    n_jobs = 4,
-                    random_state = 0)
+                    n_jobs = job,
+                    random_state = seed_val)
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
     test_preds = model.predict_proba(test_X)[:,1]
@@ -252,8 +261,13 @@ def runLR(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, penalty ='
     return test_preds, test_loss, test_preds2, model
 
 ### Running Decision Tree
-def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='gini', depth=None, min_split=2, min_leaf=1):
-    model = DecisionTreeClassifier(criterion = criterion, max_depth = depth, min_samples_split = min_split, min_samples_leaf=min_leaf)
+def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='gini', 
+          depth=None, min_split=2, min_leaf=1):
+    model = DecisionTreeClassifier(
+                                    criterion = criterion, 
+                                    max_depth = depth, 
+                                    min_samples_split = min_split, 
+                                    min_samples_leaf=min_leaf)
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
     test_preds = model.predict_proba(test_X)[:,1]
@@ -270,8 +284,11 @@ def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='gini',
     return test_preds, test_loss, test_preds2, model
     
 ### Running K-Nearest Neighbour
-def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5):
-    model = KNeighborsClassifier(n_neighbors=neighbors, n_jobs=-1)
+def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None,
+           neighbors=5, job = -1):
+    model = KNeighborsClassifier(
+                                n_neighbors=neighbors, 
+                                n_jobs=job)
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
     test_preds = model.predict_proba(test_X)[:,1]
@@ -288,8 +305,12 @@ def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5):
     return test_preds, test_loss, test_preds2, model
 
 ### Running SVM
-def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, kernel_choice = 'rbf'):
-    model = SVC(C=C, kernel=kernel_choice, probability=True)
+def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, 
+           kernel_choice = 'rbf'):
+    model = SVC(
+                C=C, 
+                kernel=kernel_choice, 
+                probability=True)
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
     test_preds = model.predict_proba(test_X)[:,1]
