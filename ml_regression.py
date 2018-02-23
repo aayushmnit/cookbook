@@ -18,6 +18,8 @@ from sklearn.svm import SVR
 import xgboost as xgb
 import lightgbm as lgb 
 from sklearn.ensemble import ExtraTreesRegressor,RandomForestRegressor
+import lime
+import lime.lime_tabular
 
 ########### Cross Validation ###########
 ### 1) Train test split
@@ -46,7 +48,39 @@ def feature_importance(model,X):
     plt.xlabel('Relative Importance')
     plt.title('Variable Importance')
     plt.show()
+
+########### Functions for explaination using Lime ###########
+
+## Make a prediction function
+def make_prediction_function(model, type = None):
+    if type == 'xgb':
+        predict_fn = lambda x: model.predict(xgb.DMatrix(x)).astype(float)
+    else:
+        predict_fn = lambda x: model.predict(x).astype(float)
+    return predict_fn
+
+## Make a lime explainer
+def make_lime_explainer(df, c_names = [], verbose_val = True):
+    explainer = lime.lime_tabular.LimeTabularExplainer(df.values,
+                                                       class_names=c_names,
+                                                       feature_names = list(df.columns),
+                                                       kernel_width=3, 
+                                                       verbose=verbose_val,
+                                                       mode='regression'
+                                                    )
+    return explainer
+
+## Lime explain function
+def lime_explain(explainer,predict_fn, df, index = 0, 
+                 show_in_notebook = True, filename = None):
+    exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
     
+    if show_in_notebook:
+        exp.show_in_notebook(show_all=False)
+    
+    if filename is not None:
+        exp.save_to_file(filename)
+        
 ########### Algorithms For Regression ###########
 
 ### Running Xgboost

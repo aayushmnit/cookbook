@@ -18,6 +18,8 @@ from sklearn.svm import SVC
 from sklearn.ensemble import ExtraTreesClassifier,RandomForestClassifier
 import xgboost as xgb 
 import lightgbm as lgb 
+import lime
+import lime.lime_tabular
 
 ########### Cross Validation ###########
 ### 1) Train test split
@@ -46,7 +48,28 @@ def feature_importance(model,X):
     plt.xlabel('Relative Importance')
     plt.title('Variable Importance')
     plt.show()
+
+## Functions for explaination using Lime
+def make_prediction_function(model):
+    predict_fn = lambda x:model.predict_proba(x).astype(float)
+    return predict_fn
+
+def make_lime_explainer(df, c_names = [], k_width=3, verbose_val = True):
+    explainer = lime.lime_tabular.LimeTabularExplainer(df.values ,class_names=c_names,
+                                                   feature_names = list(df.columns),
+                                                   kernel_width=3, verbose=verbose_val)
+    return explainer
+
+def lime_explain(explainer,predict_fn, df, index = 0, 
+                 show_in_notebook = True, filename = None):
+    exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
     
+    if show_in_notebook:
+        exp.show_in_notebook(show_all=False)
+    
+    if filename is not None:
+        exp.save_to_file(filename)
+
 ########### Algorithms For Binary classification ###########
  
 ### Running Xgboost
