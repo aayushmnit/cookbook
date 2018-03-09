@@ -78,7 +78,8 @@ def runMF(interactions, n_components=30, loss='warp', k=15, epoch=30,n_jobs = 4)
     model.fit(x,epochs=epoch,num_threads = n_jobs)
     return model
 
-def sample_recommendation_user(model, interactions, user_id, user_dict, item_dict,threshold = 0,nrec_items = 10):
+def sample_recommendation_user(model, interactions, user_id, user_dict, 
+                               item_dict,threshold = 0,nrec_items = 10, show = True):
     '''
     Function to produce user recommendations
     Required Input - 
@@ -106,17 +107,18 @@ def sample_recommendation_user(model, interactions, user_id, user_dict, item_dic
     return_score_list = scores[0:nrec_items]
     known_items = list(pd.Series(known_items).apply(lambda x: item_dict[x]))
     scores = list(pd.Series(return_score_list).apply(lambda x: item_dict[x]))
-    print("Known Likes:")
-    counter = 1
-    for i in known_items:
-        print(str(counter) + '- ' + i)
-        counter+=1
-        
-    print("\n Recommended Items:")
-    counter = 1
-    for i in scores:
-        print(str(counter) + '- ' + i)
-        counter+=1
+    if show == True:
+        print("Known Likes:")
+        counter = 1
+        for i in known_items:
+            print(str(counter) + '- ' + i)
+            counter+=1
+
+        print("\n Recommended Items:")
+        counter = 1
+        for i in scores:
+            print(str(counter) + '- ' + i)
+            counter+=1
     return return_score_list
     
 
@@ -130,6 +132,8 @@ def sample_recommendation_item(model,interactions,item_id,user_dict,item_dict,nu
         - user_dict =  Dictionary type input containing interaction_index as key and user_id as value
         - item_dict = Dictionary type input containing item_id as key and item_name as value
         - number_of_user = Number of users needed as an output
+    Expected Output -
+        - user_list = List of recommended users 
     '''
     n_users, n_items = interactions.shape
     x = np.array(interactions.columns)
@@ -154,7 +158,8 @@ def create_item_emdedding_distance_matrix(model,interactions):
     item_emdedding_distance_matrix.index = interactions.columns
     return item_emdedding_distance_matrix
 
-def item_item_recommendation(item_emdedding_distance_matrix, item_id, item_dict, n_items = 10):
+def item_item_recommendation(item_emdedding_distance_matrix, item_id, 
+                             item_dict, n_items = 10, show = True):
     '''
     Function to create item-item recommendation
     Required Input - 
@@ -162,14 +167,17 @@ def item_item_recommendation(item_emdedding_distance_matrix, item_id, item_dict,
         - item_id  = item ID for which we need to generate recommended items
         - item_dict = Dictionary type input containing item_id as key and item_name as value
         - n_items = Number of items needed as an output
+    Expected Output -
+        - recommended_items = List of recommended items
     '''
     recommended_items = list(pd.Series(item_emdedding_distance_matrix.loc[item_id,:]. \
                                   sort_values(ascending = False).head(n_items+1). \
                                   index[1:n_items+1]))
-    print("Item of interest :{0}".format(item_dict[item_id]))
-    print("Item similar to the above item:")
-    counter = 1
-    for i in recommended_items:
-        print(str(counter) + '- ' +  item_dict[i])
-        counter+=1
+    if show == True:
+        print("Item of interest :{0}".format(item_dict[item_id]))
+        print("Item similar to the above item:")
+        counter = 1
+        for i in recommended_items:
+            print(str(counter) + '- ' +  item_dict[i])
+            counter+=1
     return recommended_items
