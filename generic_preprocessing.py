@@ -10,7 +10,9 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler ## 
 import pandas_profiling ## For easy profiling of pandas DataFrame
 import missingno as msno ## Missing value co-occurance analysis
 
-####### Data Exploration ############
+.3
+................................................####### Data Exploration ############
+
 def print_dim(df):
     '''
     Function to print the dimensions of a given python dataframe
@@ -64,7 +66,29 @@ def missing_value_analysis(df):
     msno.matrix(df)
     msno.heatmap(df)
 
+####### Basic helper function ############
+
+def join_df(left, right, left_on, right_on=None):
+    '''
+    Function to outer joins of pandas dataframe
+    Required Input - 
+        - left = Pandas DataFrame 1
+        - right = Pandas DataFrame 2
+        - left_on = Fields in DataFrame 1 to merge on
+        - right_on = Fields in DataFrame 2 to merge with left_on fields of Dataframe 1
+    Expected Output -
+        - Pandas dataframe with dropped no variation columns
+    '''
+    if right_on is None:
+        right_on = left_on
+    return left.merge(right, 
+                      how='left', 
+                      left_on=left_on, 
+                      right_on=right_on, 
+                      suffixes=("","_y"))
+    
 ####### Pre-processing ############    
+
 def drop_allsame(df):
     '''
     Function to remove any columns which have same value all across
@@ -205,3 +229,28 @@ def one_hot_encoder(df, columns):
         dummies = pd.get_dummies(df[each], prefix=each, drop_first=False)
         df = pd.concat([df, dummies], axis=1)
     return df.drop(columns,axis = 1)
+
+####### Feature Engineering ############
+
+def create_date_features(df,column, more_features = False):
+    '''
+    Function to extract date features
+    Required Input - 
+        - df = Pandas DataFrame
+        - columns = Columns name containing date field
+        - more_features = To get more feature extracted
+    Expected Output -
+        - df = Pandas DataFrame with additional extracted date features
+    '''
+    df.loc[:,column] = pd.to_datetime(df.loc[:,column])
+    df.loc[:,column+'_Year'] = df.loc[:,column].dt.year
+    df.loc[:,column+'_Month'] = df.loc[:,column].dt.month
+    df.loc[:,column+'_Week'] = df.loc[:,column].dt.week
+    df.loc[:,column+'_Day'] = df.loc[:,column].dt.day
+    
+    if more_features:
+        df.loc[:,column+'_Quarter'] = df.loc[:,column].dt.quarter
+        df.loc[:,column+'_Weekday'] = df.loc[:,column].dt.weekday
+        df.loc[:,column+'_DayOfWeek'] = df.loc[:,column].dt.dayofweek
+        df.loc[:,column+'_DayOfYear'] = df.loc[:,column].dt.dayofyear
+    return df
