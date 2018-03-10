@@ -10,8 +10,7 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler ## 
 import pandas_profiling ## For easy profiling of pandas DataFrame
 import missingno as msno ## Missing value co-occurance analysis
 
-.3
-................................................####### Data Exploration ############
+####### Data Exploration ############
 
 def print_dim(df):
     '''
