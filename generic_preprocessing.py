@@ -67,7 +67,7 @@ def missing_value_analysis(df):
 
 ####### Basic helper function ############
 
-def join_df(left, right, left_on, right_on=None):
+def join_df(left, right, left_on, right_on=None, method='left'):
     '''
     Function to outer joins of pandas dataframe
     Required Input - 
@@ -75,13 +75,14 @@ def join_df(left, right, left_on, right_on=None):
         - right = Pandas DataFrame 2
         - left_on = Fields in DataFrame 1 to merge on
         - right_on = Fields in DataFrame 2 to merge with left_on fields of Dataframe 1
+        - method = Type of join
     Expected Output -
         - Pandas dataframe with dropped no variation columns
     '''
     if right_on is None:
         right_on = left_on
     return left.merge(right, 
-                      how='left', 
+                      how=method, 
                       left_on=left_on, 
                       right_on=right_on, 
                       suffixes=("","_y"))
@@ -206,13 +207,16 @@ def label_encoder(df,columns):
         - columns = List input of all the columns which needs to be label encoded
     Expected Output -
         - df = Pandas DataFrame with lable encoded columns
+        - le_dict = Dictionary of all the column and their label encoders
     '''
+    le_dict = {}
     for c in columns:
         print("Label encoding column - {0}".format(c))
         lbl = LabelEncoder()
         lbl.fit(list(df[c].values.astype('str')))
         df[c] = lbl.transform(list(df[c].values.astype('str')))
-    return df
+        le_dict[c] = lbl
+    return df, le_dict
 
 def one_hot_encoder(df, columns):
     '''
@@ -231,25 +235,32 @@ def one_hot_encoder(df, columns):
 
 ####### Feature Engineering ############
 
-def create_date_features(df,column, more_features = False):
+def create_date_features(df,column, date_format = None, more_features = False, time_features = False):
     '''
     Function to extract date features
     Required Input - 
         - df = Pandas DataFrame
+        - date_format = Date parsing format
         - columns = Columns name containing date field
         - more_features = To get more feature extracted
+        - time_features = To extract hour from datetime field
     Expected Output -
         - df = Pandas DataFrame with additional extracted date features
     '''
-    df.loc[:,column] = pd.to_datetime(df.loc[:,column])
+    if date_format is None:
+        df.loc[:,column] = pd.to_datetime(df.loc[:,column])
+    else:
+        df.loc[:,column] = pd.to_datetime(df.loc[:,column],format = date_format)
     df.loc[:,column+'_Year'] = df.loc[:,column].dt.year
-    df.loc[:,column+'_Month'] = df.loc[:,column].dt.month
-    df.loc[:,column+'_Week'] = df.loc[:,column].dt.week
-    df.loc[:,column+'_Day'] = df.loc[:,column].dt.day
+    df.loc[:,column+'_Month'] = df.loc[:,column].dt.month.astype('uint8')
+    df.loc[:,column+'_Week'] = df.loc[:,column].dt.week.astype('uint8')
+    df.loc[:,column+'_Day'] = df.loc[:,column].dt.day.astype('uint8')
     
     if more_features:
-        df.loc[:,column+'_Quarter'] = df.loc[:,column].dt.quarter
-        df.loc[:,column+'_Weekday'] = df.loc[:,column].dt.weekday
-        df.loc[:,column+'_DayOfWeek'] = df.loc[:,column].dt.dayofweek
+        df.loc[:,column+'_Quarter'] = df.loc[:,column].dt.quarter.astype('uint8')
+        df.loc[:,column+'_DayOfWeek'] = df.loc[:,column].dt.dayofweek.astype('uint8')
         df.loc[:,column+'_DayOfYear'] = df.loc[:,column].dt.dayofyear
+        
+    if time_features:
+        df.loc[:,column+'_Hour'] = df.loc[:,column].dt.hour.astype('uint8')
     return df
