@@ -273,6 +273,9 @@ def target_encoder(train_df, col_name, target_name, test_df = None, how='mean'):
         - col_name = Name of the columns of the source variable
         - target_name = Name of the columns of target variable
         - how = 'mean' default but can also be 'count'
+	Expected Output - 
+		- train_df = Training dataframe with added encoded features
+		- test_df = Testing dataframe with added encoded features
     '''
     aggregate_data = train_df.groupby(col_name)[target_name] \
                     .agg([how]) \
