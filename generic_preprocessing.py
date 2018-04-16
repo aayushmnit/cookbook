@@ -234,7 +234,6 @@ def one_hot_encoder(df, columns):
     return df.drop(columns,axis = 1)
 
 ####### Feature Engineering ############
-
 def create_date_features(df,column, date_format = None, more_features = False, time_features = False):
     '''
     Function to extract date features
@@ -264,3 +263,22 @@ def create_date_features(df,column, date_format = None, more_features = False, t
     if time_features:
         df.loc[:,column+'_Hour'] = df.loc[:,column].dt.hour.astype('uint8')
     return df
+
+def target_encoder(train_df, col_name, target_name, test_df = None, how='mean'):
+    '''
+    Function to do target encoding
+    Required Input - 
+        - train_df = Training Pandas Dataframe
+        - test_df = Testing Pandas Dataframe
+        - col_name = Name of the columns of the source variable
+        - target_name = Name of the columns of target variable
+        - how = 'mean' default but can also be 'count'
+    '''
+    aggregate_data = train_df.groupby(col_name)[target_name] \
+                    .agg([how]) \
+                    .reset_index() \
+                    .rename(columns={how: col_name+'_'+target_name+'_'+how})
+    if test_df is None:
+        return join_df(train_df,aggregate_data,left_on = col_name)
+    else:
+        return join_df(train_df,aggregate_data,left_on = col_name), join_df(test_df,aggregate_data,left_on = col_name)

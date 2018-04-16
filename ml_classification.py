@@ -167,7 +167,7 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
         model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtest],
                           early_stopping_rounds=100, verbose_eval=20)
     else:
-        lgtest = lgb.DMatrix(test_X)
+        lgtest = lgb.Dataset(test_X)
         model = lgb.train(params, lgtrain, num_rounds)
         
     pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
@@ -260,10 +260,10 @@ def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth
         test_preds2 = model.predict_proba(test_X2)[:,1]
     
     test_loss = 0
-    
-    train_loss = metrics.roc_auc_score(train_y, train_preds)
-    test_loss = metrics.roc_auc_score(test_y, test_preds)
-    print("Train and Test loss : ", train_loss, test_loss)
+    if test_y is not None:
+        train_loss = metrics.roc_auc_score(train_y, train_preds)
+        test_loss = metrics.roc_auc_score(test_y, test_preds)
+        print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
 ### Running Logistic Regression
