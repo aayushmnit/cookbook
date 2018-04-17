@@ -101,7 +101,8 @@ def sample_recommendation_user(model, interactions, user_id, user_dict,
     scores = list(pd.Series(scores.sort_values(ascending=False).index))
     
     known_items = list(pd.Series(interactions.loc[user_id,:] \
-                                 [interactions.loc[user_id,:] > threshold].index))
+                                 [interactions.loc[user_id,:] > threshold].index) \
+								 .sort_values(ascending=False))
     
     scores = [x for x in scores if x not in known_items]
     return_score_list = scores[0:nrec_items]
