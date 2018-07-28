@@ -112,11 +112,11 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
         xgtest = xgb.DMatrix(test_X)
         model = xgb.train(plst, xgtrain, num_rounds)
     
-    pred_test_y = model.predict(xgtest, ntree_limit=model.best_ntree_limit)
+    pred_test_y = model.predict(xgtest, ntree_limit=model.best_iteration)
     
     pred_test_y2 = 0
     if test_X2 is not None:
-        pred_test_y2 = model.predict(xgb.DMatrix(test_X2), ntree_limit=model.best_ntree_limit)
+        pred_test_y2 = model.predict(xgb.DMatrix(test_X2), ntree_limit=model.best_iteration)
     
     loss = 0
     if test_y is not None:
