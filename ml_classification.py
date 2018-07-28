@@ -60,9 +60,12 @@ def make_lime_explainer(df, c_names = [], k_width=3, verbose_val = True):
                                                    kernel_width=3, verbose=verbose_val)
     return explainer
 
-def lime_explain(explainer,predict_fn, df, index = 0, 
+def lime_explain(explainer,predict_fn, df, index = 0, num_features = None,
                  show_in_notebook = True, filename = None):
-    exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
+    if num_features is not None:
+        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=num_features)
+    else:
+        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
     
     if show_in_notebook:
         exp.show_in_notebook(show_all=False)
@@ -101,11 +104,11 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
         xgtest = xgb.DMatrix(test_X)
         model = xgb.train(plst, xgtrain, num_rounds)
     
-    pred_test_y = model.predict(xgtest, ntree_limit=model.best_ntree_limit)
+    pred_test_y = model.predict(xgtest, ntree_limit=model.best_iteration)
     
     pred_test_y2 = 0
     if test_X2 is not None:
-        pred_test_y2 = model.predict(xgb.DMatrix(test_X2), ntree_limit=model.best_ntree_limit)
+        pred_test_y2 = model.predict(xgb.DMatrix(test_X2), ntree_limit=model.best_iteration)
     
     loss = 0
     if test_y is not None:

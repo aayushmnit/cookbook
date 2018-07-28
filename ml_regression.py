@@ -71,9 +71,12 @@ def make_lime_explainer(df, c_names = [], verbose_val = True):
     return explainer
 
 ## Lime explain function
-def lime_explain(explainer,predict_fn, df, index = 0, 
+def lime_explain(explainer,predict_fn, df, index = 0, num_features = None,
                  show_in_notebook = True, filename = None):
-    exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
+    if num_features is not None:
+        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=num_features)
+    else:
+        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
     
     if show_in_notebook:
         exp.show_in_notebook(show_all=False)
