@@ -151,7 +151,7 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
         lgtest = lgb.Dataset(test_X, label=test_y)
         model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtest], early_stopping_rounds=100, verbose_eval=20)
     else:
-        lgtest = lgb.DMatrix(test_X)
+        lgtest = lgb.Dataset(test_X)
         model = lgb.train(params, lgtrain, num_rounds)
         
     pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
