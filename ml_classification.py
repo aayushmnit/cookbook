@@ -10,6 +10,10 @@ from sklearn.model_selection import KFold, train_test_split ## Creating cross va
 from sklearn import metrics ## For loss functions
 import matplotlib.pyplot as plt
 
+## For evaluation
+from sklearn.metrics import roc_curve, auc, roc_auc_score, confusion_matrix
+from mlxtend.plotting import plot_confusion_matrix
+
 ## Libraries for Classification algorithms
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -35,6 +39,61 @@ def kfold_cv(X,n_folds = 5, seed = 1):
     return cv.split(X)
 
 ########### Model Explanation ###########
+## Plotting AUC ROC curve
+def plot_roc(y_actual, y_pred):
+    '''
+    Function to plot AUC-ROC curve
+    '''
+    fpr, tpr, thresholds = roc_curve(y_actual, y_pred)
+    plt.plot(fpr, tpr, color='b',
+             label=r'Mean ROC (AUC = %0.2f)' % (roc_auc_score(y_actual,y_pred)),
+             lw=2, alpha=.8)
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+             label='Luck', alpha=.8)
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([-0.05, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+## Plotting confusion matrix
+def plot_confusion_matrix(y_true,y_pred, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+	cm = metrics.confusion_matrix(y_test, y_pred)
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
 ## Variable Importance plot
 def feature_importance(model,X):
     feature_importance = model.feature_importances_
