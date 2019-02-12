@@ -180,7 +180,7 @@ def min_max_scaler(df,columns):
     scaler = MinMaxScaler()
     data = pd.DataFrame(scaler.fit_transform(df.loc[:,columns]))
     data.index = df.index
-    data.columns = df.columns
+    data.columns = columns
     return data, scaler
 
 def z_scaler(df,columns):
@@ -196,7 +196,7 @@ def z_scaler(df,columns):
     scaler = StandardScaler()
     data = pd.DataFrame(scaler.fit_transform(df.loc[:,columns]))
     data.index = df.index
-    data.columns = df.columns
+    data.columns = columns
     return data, scaler
     
 def label_encoder(df,columns):
