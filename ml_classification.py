@@ -67,7 +67,7 @@ def plot_confusion_matrix(y_true,y_pred, classes,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-	cm = metrics.confusion_matrix(y_test, y_pred)
+	cm = metrics.confusion_matrix(y_true, y_pred)
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
