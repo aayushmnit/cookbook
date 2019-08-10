@@ -9,10 +9,11 @@ import numpy as np ## Numerical python for matrix operations
 from sklearn.model_selection import KFold, train_test_split ## Creating cross validation sets
 from sklearn import metrics ## For loss functions
 import matplotlib.pyplot as plt
+import itertools
 
 ## For evaluation
-from sklearn.metrics import roc_curve, auc, roc_auc_score, confusion_matrix
-from mlxtend.plotting import plot_confusion_matrix
+from sklearn.metrics import roc_curve, auc, roc_auc_score, confusion_matrix, precision_recall_curve, average_precision_score
+from inspect import signature
 
 ## Libraries for Classification algorithms
 from sklearn.linear_model import LogisticRegression
@@ -46,10 +47,10 @@ def plot_roc(y_actual, y_pred):
     '''
     fpr, tpr, thresholds = roc_curve(y_actual, y_pred)
     plt.plot(fpr, tpr, color='b',
-             label=r'Mean ROC (AUC = %0.2f)' % (roc_auc_score(y_actual,y_pred)),
+             label=r'Model (AUC = %0.2f)' % (roc_auc_score(y_actual,y_pred)),
              lw=2, alpha=.8)
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-             label='Luck', alpha=.8)
+             label='Luck (AUC = 0.5)', alpha=.8)
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
     plt.xlabel('False Positive Rate')
@@ -57,6 +58,28 @@ def plot_roc(y_actual, y_pred):
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     plt.show()
+
+def plot_precisionrecall(y_actual, y_pred):
+    '''
+    Function to plot AUC-ROC curve
+    '''
+    average_precision = average_precision_score(y_actual, y_pred)
+    precision, recall, _ = precision_recall_curve(y_actual, y_pred)
+    # In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
+    step_kwargs = ({'step': 'post'}
+                   if 'step' in signature(plt.fill_between).parameters
+                   else {})
+    
+    plt.figure(figsize=(9, 6))
+    plt.step(recall, precision, color='b', alpha=0.2,
+             where='post')
+    plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.title('Precision-Recall curve: AP={0:0.2f}'.format(average_precision))
 
 ## Plotting confusion matrix
 def plot_confusion_matrix(y_true,y_pred, classes,
@@ -67,7 +90,7 @@ def plot_confusion_matrix(y_true,y_pred, classes,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-	cm = metrics.confusion_matrix(y_true, y_pred)
+    cm = metrics.confusion_matrix(y_true, y_pred)
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -208,10 +231,10 @@ def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
 ### Running LightGBM
 def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0,
            rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-           silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
+           silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5, n_thread = 20, metric = 'auc'):
     params = {}
     params["objective"] = "binary"
-    params['metric'] = 'auc'
+    params['metric'] = metric
     params["max_depth"] = dep
     params["min_data_in_leaf"] = min_data_in_leaf_val
     params["learning_rate"] = eta
@@ -220,13 +243,14 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
     params["bagging_freq"] = bagging_freq
     params["bagging_seed"] = seed_val
     params["verbosity"] = silent_val
+    params["num_threads"] = n_thread
     num_rounds = rounds
     
     lgtrain = lgb.Dataset(train_X, label=train_y)
     
     if test_y is not None:
         lgtest = lgb.Dataset(test_X, label=test_y)
-        model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtest],
+        model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtrain,lgtest],
                           early_stopping_rounds=100, verbose_eval=20)
     else:
         lgtest = lgb.Dataset(test_X)
@@ -240,7 +264,7 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
     
     loss = 0
     if test_y is not None:
-        loss = metrics.roc_auc_score(test_y, pred_test_y)
+        loss = roc_auc_score(test_y, pred_test_y)
         print(loss)
         return pred_test_y, loss, pred_test_y2, model
     else:
@@ -249,7 +273,7 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
 ### Running LightGBM classifier for model explaination
 def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500,
             dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-            silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5):
+            silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5, n_thread = 20, metric = 'auc'):
     model = lgb.LGBMClassifier(max_depth=dep,
                    learning_rate=eta,
                    min_data_in_leaf=min_data_in_leaf_val,
@@ -258,7 +282,9 @@ def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
                   bagging_freq = bagging_freq,
                   bagging_seed = seed_val,
                   verbosity = silent_val,
-                  num_rounds = rounds)
+                  num_threads = n_thread,
+                  n_estimators = rounds,
+                  metric= metric)
 
     model.fit(train_X, train_y)
     train_preds = model.predict_proba(train_X)[:,1]
@@ -270,9 +296,9 @@ def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
 
     test_loss = 0
     if test_y is not None:
-        train_loss = metrics.roc_auc_score(train_y, train_preds)
-        test_loss = metrics.roc_auc_score(test_y, test_preds)
-        print("Train and Test loss : ", train_loss, test_loss)
+        train_loss = roc_auc_score(train_y, train_preds)
+        test_loss = roc_auc_score(test_y, test_preds)
+        print("Train and Test AUC : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
 ### Running Extra Trees  
