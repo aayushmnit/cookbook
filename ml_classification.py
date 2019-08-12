@@ -4,15 +4,25 @@
 """
 
 ## Importing required libraries
-import pandas as pd ## For DataFrame operation
-import numpy as np ## Numerical python for matrix operations
-from sklearn.model_selection import KFold, train_test_split ## Creating cross validation sets
-from sklearn import metrics ## For loss functions
+import pandas as pd  ## For DataFrame operation
+import numpy as np  ## Numerical python for matrix operations
+from sklearn.model_selection import (
+    KFold,
+    train_test_split,
+)  ## Creating cross validation sets
+from sklearn import metrics  ## For loss functions
 import matplotlib.pyplot as plt
 import itertools
 
 ## For evaluation
-from sklearn.metrics import roc_curve, auc, roc_auc_score, confusion_matrix, precision_recall_curve, average_precision_score
+from sklearn.metrics import (
+    roc_curve,
+    auc,
+    roc_auc_score,
+    confusion_matrix,
+    precision_recall_curve,
+    average_precision_score,
+)
 from inspect import signature
 
 ## Libraries for Classification algorithms
@@ -20,150 +30,207 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.ensemble import ExtraTreesClassifier,RandomForestClassifier
-import xgboost as xgb 
-import lightgbm as lgb 
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
+import xgboost as xgb
+import lightgbm as lgb
 import lime
 import lime.lime_tabular
 
 ########### Cross Validation ###########
 ### 1) Train test split
-def holdout_cv(X,y,size = 0.3, seed = 1):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = size, random_state = seed)
-    X_train = X_train.reset_index(drop='index')
-    X_test = X_test.reset_index(drop='index')
+def holdout_cv(X, y, size=0.3, seed=1):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=size, random_state=seed
+    )
+    X_train = X_train.reset_index(drop="index")
+    X_test = X_test.reset_index(drop="index")
     return X_train, X_test, y_train, y_test
 
+
 ### 2) Cross-Validation (K-Fold)
-def kfold_cv(X,n_folds = 5, seed = 1):
-    cv = KFold(n_splits = n_folds, random_state = seed, shuffle = True)
+def kfold_cv(X, n_folds=5, seed=1):
+    cv = KFold(n_splits=n_folds, random_state=seed, shuffle=True)
     return cv.split(X)
+
 
 ########### Model Explanation ###########
 ## Plotting AUC ROC curve
 def plot_roc(y_actual, y_pred):
-    '''
+    """
     Function to plot AUC-ROC curve
-    '''
+    """
     fpr, tpr, thresholds = roc_curve(y_actual, y_pred)
-    plt.plot(fpr, tpr, color='b',
-             label=r'Model (AUC = %0.2f)' % (roc_auc_score(y_actual,y_pred)),
-             lw=2, alpha=.8)
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-             label='Luck (AUC = 0.5)', alpha=.8)
+    plt.plot(
+        fpr,
+        tpr,
+        color="b",
+        label=r"Model (AUC = %0.2f)" % (roc_auc_score(y_actual, y_pred)),
+        lw=2,
+        alpha=0.8,
+    )
+    plt.plot(
+        [0, 1],
+        [0, 1],
+        linestyle="--",
+        lw=2,
+        color="r",
+        label="Luck (AUC = 0.5)",
+        alpha=0.8,
+    )
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver operating characteristic example")
     plt.legend(loc="lower right")
     plt.show()
 
+
 def plot_precisionrecall(y_actual, y_pred):
-    '''
+    """
     Function to plot AUC-ROC curve
-    '''
+    """
     average_precision = average_precision_score(y_actual, y_pred)
     precision, recall, _ = precision_recall_curve(y_actual, y_pred)
     # In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
-    step_kwargs = ({'step': 'post'}
-                   if 'step' in signature(plt.fill_between).parameters
-                   else {})
-    
-    plt.figure(figsize=(9, 6))
-    plt.step(recall, precision, color='b', alpha=0.2,
-             where='post')
-    plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+    step_kwargs = (
+        {"step": "post"} if "step" in signature(plt.fill_between).parameters else {}
+    )
 
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
+    plt.figure(figsize=(9, 6))
+    plt.step(recall, precision, color="b", alpha=0.2, where="post")
+    plt.fill_between(recall, precision, alpha=0.2, color="b", **step_kwargs)
+
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
-    plt.title('Precision-Recall curve: AP={0:0.2f}'.format(average_precision))
+    plt.title("Precision-Recall curve: AP={0:0.2f}".format(average_precision))
+
 
 ## Plotting confusion matrix
-def plot_confusion_matrix(y_true,y_pred, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+def plot_confusion_matrix(
+    y_true,
+    y_pred,
+    classes,
+    normalize=False,
+    title="Confusion matrix",
+    cmap=plt.cm.Blues,
+):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     cm = metrics.confusion_matrix(y_true, y_pred)
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
     else:
-        print('Confusion matrix, without normalization')
+        print("Confusion matrix, without normalization")
 
     print(cm)
 
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.imshow(cm, interpolation="nearest", cmap=cmap)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
 
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
+    fmt = ".2f" if normalize else "d"
+    thresh = cm.max() / 2.0
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+        plt.text(
+            j,
+            i,
+            format(cm[i, j], fmt),
+            horizontalalignment="center",
+            color="white" if cm[i, j] > thresh else "black",
+        )
 
     plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+
 
 ## Variable Importance plot
-def feature_importance(model,X):
+def feature_importance(model, X):
     feature_importance = model.feature_importances_
     feature_importance = 100.0 * (feature_importance / feature_importance.max())
     sorted_idx = np.argsort(feature_importance)
-    pos = np.arange(sorted_idx.shape[0]) + .5
+    pos = np.arange(sorted_idx.shape[0]) + 0.5
     plt.figure(figsize=(15, 15))
     plt.subplot(1, 2, 2)
-    plt.barh(pos, feature_importance[sorted_idx], align='center')
+    plt.barh(pos, feature_importance[sorted_idx], align="center")
     plt.yticks(pos, X.columns[sorted_idx])
-    plt.xlabel('Relative Importance')
-    plt.title('Variable Importance')
+    plt.xlabel("Relative Importance")
+    plt.title("Variable Importance")
     plt.show()
+
 
 ## Functions for explaination using Lime
 def make_prediction_function(model):
-    predict_fn = lambda x:model.predict_proba(x).astype(float)
+    predict_fn = lambda x: model.predict_proba(x).astype(float)
     return predict_fn
 
-def make_lime_explainer(df, c_names = [], k_width=3, verbose_val = True):
-    explainer = lime.lime_tabular.LimeTabularExplainer(df.values ,class_names=c_names,
-                                                   feature_names = list(df.columns),
-                                                   kernel_width=3, verbose=verbose_val)
+
+def make_lime_explainer(df, c_names=[], k_width=3, verbose_val=True):
+    explainer = lime.lime_tabular.LimeTabularExplainer(
+        df.values,
+        class_names=c_names,
+        feature_names=list(df.columns),
+        kernel_width=3,
+        verbose=verbose_val,
+    )
     return explainer
 
-def lime_explain(explainer,predict_fn, df, index = 0, num_features = None,
-                 show_in_notebook = True, filename = None):
+
+def lime_explain(
+    explainer,
+    predict_fn,
+    df,
+    index=0,
+    num_features=None,
+    show_in_notebook=True,
+    filename=None,
+):
     if num_features is not None:
-        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=num_features)
+        exp = explainer.explain_instance(
+            df.values[index], predict_fn, num_features=num_features
+        )
     else:
-        exp = explainer.explain_instance(df.values[index], predict_fn, num_features=df.shape[1])
-    
+        exp = explainer.explain_instance(
+            df.values[index], predict_fn, num_features=df.shape[1]
+        )
+
     if show_in_notebook:
         exp.show_in_notebook(show_all=False)
-    
+
     if filename is not None:
         exp.save_to_file(filename)
 
+
 ########### Algorithms For Binary classification ###########
- 
+
 ### Running Xgboost
-def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, 
-           rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-           min_child_weight_val=1, silent_val = 1):
+def runXGB(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    seed_val=0,
+    rounds=500,
+    dep=8,
+    eta=0.05,
+    sub_sample=0.7,
+    col_sample=0.7,
+    min_child_weight_val=1,
+    silent_val=1,
+):
     params = {}
     params["objective"] = "binary:logistic"
-    params['eval_metric'] = 'auc'
+    params["eval_metric"] = "auc"
     params["eta"] = eta
     params["subsample"] = sub_sample
     params["min_child_weight"] = min_child_weight_val
@@ -171,8 +238,8 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
     params["max_depth"] = dep
     params["silent"] = silent_val
     params["seed"] = seed_val
-    #params["max_delta_step"] = 2
-    #params["gamma"] = 0.5
+    # params["max_delta_step"] = 2
+    # params["gamma"] = 0.5
     num_rounds = rounds
 
     plst = list(params.items())
@@ -180,18 +247,27 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
 
     if test_y is not None:
         xgtest = xgb.DMatrix(test_X, label=test_y)
-        watchlist = [ (xgtrain,'train'), (xgtest, 'test') ]
-        model = xgb.train(plst, xgtrain, num_rounds, watchlist, early_stopping_rounds=100, verbose_eval=20)
+        watchlist = [(xgtrain, "train"), (xgtest, "test")]
+        model = xgb.train(
+            plst,
+            xgtrain,
+            num_rounds,
+            watchlist,
+            early_stopping_rounds=100,
+            verbose_eval=20,
+        )
     else:
         xgtest = xgb.DMatrix(test_X)
         model = xgb.train(plst, xgtrain, num_rounds)
-    
+
     pred_test_y = model.predict(xgtest, ntree_limit=model.best_iteration)
-    
+
     pred_test_y2 = 0
     if test_X2 is not None:
-        pred_test_y2 = model.predict(xgb.DMatrix(test_X2), ntree_limit=model.best_iteration)
-    
+        pred_test_y2 = model.predict(
+            xgb.DMatrix(test_X2), ntree_limit=model.best_iteration
+        )
+
     loss = 0
     if test_y is not None:
         loss = metrics.roc_auc_score(test_y, pred_test_y)
@@ -199,27 +275,42 @@ def runXGB(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
     else:
         return pred_test_y, loss, pred_test_y2, model
 
+
 ### Running Xgboost classifier for model explaination
-def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, 
-            rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-            min_child_weight_val=1, silent_val = 1):
-    model = xgb.XGBClassifier(objective="binary:logistic",
-                              learning_rate=eta,
-                              subsample=sub_sample,
-                              min_child_weight=min_child_weight_val,
-                              colsample_bytree=col_sample,
-                              max_depth=dep,
-                              silent=silent_val,
-                              seed=seed_val,
-                              n_estimators=rounds)
+def runXGBC(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    seed_val=0,
+    rounds=500,
+    dep=8,
+    eta=0.05,
+    sub_sample=0.7,
+    col_sample=0.7,
+    min_child_weight_val=1,
+    silent_val=1,
+):
+    model = xgb.XGBClassifier(
+        objective="binary:logistic",
+        learning_rate=eta,
+        subsample=sub_sample,
+        min_child_weight=min_child_weight_val,
+        colsample_bytree=col_sample,
+        max_depth=dep,
+        silent=silent_val,
+        seed=seed_val,
+        n_estimators=rounds,
+    )
 
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
-    
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
+
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
 
     test_loss = 0
     if test_y is not None:
@@ -228,13 +319,30 @@ def runXGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0,
         print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
+
 ### Running LightGBM
-def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=None, seed_val=0,
-           rounds=500, dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-           silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5, n_thread = 20, metric = 'auc'):
+def runLGB(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    feature_names=None,
+    seed_val=0,
+    rounds=500,
+    dep=8,
+    eta=0.05,
+    sub_sample=0.7,
+    col_sample=0.7,
+    silent_val=1,
+    min_data_in_leaf_val=20,
+    bagging_freq=5,
+    n_thread=20,
+    metric="auc",
+):
     params = {}
     params["objective"] = "binary"
-    params['metric'] = metric
+    params["metric"] = metric
     params["max_depth"] = dep
     params["min_data_in_leaf"] = min_data_in_leaf_val
     params["learning_rate"] = eta
@@ -245,23 +353,29 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
     params["verbosity"] = silent_val
     params["num_threads"] = n_thread
     num_rounds = rounds
-    
+
     lgtrain = lgb.Dataset(train_X, label=train_y)
-    
+
     if test_y is not None:
         lgtest = lgb.Dataset(test_X, label=test_y)
-        model = lgb.train(params, lgtrain, num_rounds, valid_sets=[lgtrain,lgtest],
-                          early_stopping_rounds=100, verbose_eval=20)
+        model = lgb.train(
+            params,
+            lgtrain,
+            num_rounds,
+            valid_sets=[lgtrain, lgtest],
+            early_stopping_rounds=100,
+            verbose_eval=20,
+        )
     else:
         lgtest = lgb.Dataset(test_X)
         model = lgb.train(params, lgtrain, num_rounds)
-        
+
     pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
-    
+
     pred_test_y2 = 0
     if test_X2 is not None:
         pred_test_y2 = model.predict(test_X2, num_iteration=model.best_iteration)
-    
+
     loss = 0
     if test_y is not None:
         loss = roc_auc_score(test_y, pred_test_y)
@@ -270,29 +384,47 @@ def runLGB(train_X, train_y, test_X, test_y=None, test_X2=None, feature_names=No
     else:
         return pred_test_y, loss, pred_test_y2, model
 
+
 ### Running LightGBM classifier for model explaination
-def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rounds=500,
-            dep=8, eta=0.05,sub_sample=0.7,col_sample=0.7,
-            silent_val = 1,min_data_in_leaf_val = 20, bagging_freq = 5, n_thread = 20, metric = 'auc'):
-    model = lgb.LGBMClassifier(max_depth=dep,
-                   learning_rate=eta,
-                   min_data_in_leaf=min_data_in_leaf_val,
-                  bagging_fraction = sub_sample,
-                  feature_fraction = col_sample,
-                  bagging_freq = bagging_freq,
-                  bagging_seed = seed_val,
-                  verbosity = silent_val,
-                  num_threads = n_thread,
-                  n_estimators = rounds,
-                  metric= metric)
+def runLGBC(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    seed_val=0,
+    rounds=500,
+    dep=8,
+    eta=0.05,
+    sub_sample=0.7,
+    col_sample=0.7,
+    silent_val=1,
+    min_data_in_leaf_val=20,
+    bagging_freq=5,
+    n_thread=20,
+    metric="auc",
+):
+    model = lgb.LGBMClassifier(
+        max_depth=dep,
+        learning_rate=eta,
+        min_data_in_leaf=min_data_in_leaf_val,
+        bagging_fraction=sub_sample,
+        feature_fraction=col_sample,
+        bagging_freq=bagging_freq,
+        bagging_seed=seed_val,
+        verbosity=silent_val,
+        num_threads=n_thread,
+        n_estimators=rounds,
+        metric=metric,
+    )
 
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
-    
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
+
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
 
     test_loss = 0
     if test_y is not None:
@@ -301,52 +433,80 @@ def runLGBC(train_X, train_y, test_X, test_y=None, test_X2=None, seed_val=0, rou
         print("Train and Test AUC : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
-### Running Extra Trees  
-def runET(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20, 
-          leaf=10, feat=0.2,min_data_split_val=2,seed_val=0,job = -1):
-	model = ExtraTreesClassifier(
-                    n_estimators = rounds,
-					max_depth = depth,
-					min_samples_split = min_data_split_val,
-					min_samples_leaf = leaf,
-					max_features =  feat,
-					n_jobs = job,
-					random_state = seed_val)
-	model.fit(train_X, train_y)
-	train_preds = model.predict_proba(train_X)[:,1]
-	test_preds = model.predict_proba(test_X)[:,1]
-	
-	test_preds2 = 0
-	if test_X2 is not None:
-		test_preds2 = model.predict_proba(test_X2)[:,1]
-	
-	test_loss = 0
-	if test_y is not None:
-		train_loss = metrics.roc_auc_score(train_y, train_preds)
-		test_loss = metrics.roc_auc_score(test_y, test_preds)
-		print("Depth, leaf, feat : ", depth, leaf, feat)
-		print("Train and Test loss : ", train_loss, test_loss)
-	return test_preds, test_loss, test_preds2, model
- 
-### Running Random Forest
-def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth=20, leaf=10, 
-          feat=0.2,min_data_split_val=2,seed_val=0,job = -1):
-    model = RandomForestClassifier(
-                    n_estimators = rounds,
-                    max_depth = depth,
-                    min_samples_split = min_data_split_val,
-                    min_samples_leaf = leaf,
-                    max_features =  feat,
-                    n_jobs = job,
-                    random_state = seed_val)
+
+### Running Extra Trees
+def runET(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    rounds=100,
+    depth=20,
+    leaf=10,
+    feat=0.2,
+    min_data_split_val=2,
+    seed_val=0,
+    job=-1,
+):
+    model = ExtraTreesClassifier(
+        n_estimators=rounds,
+        max_depth=depth,
+        min_samples_split=min_data_split_val,
+        min_samples_leaf=leaf,
+        max_features=feat,
+        n_jobs=job,
+        random_state=seed_val,
+    )
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
-    
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
+
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
-    
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
+
+    test_loss = 0
+    if test_y is not None:
+        train_loss = metrics.roc_auc_score(train_y, train_preds)
+        test_loss = metrics.roc_auc_score(test_y, test_preds)
+        print("Depth, leaf, feat : ", depth, leaf, feat)
+        print("Train and Test loss : ", train_loss, test_loss)
+    return test_preds, test_loss, test_preds2, model
+
+
+### Running Random Forest
+def runRF(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    rounds=100,
+    depth=20,
+    leaf=10,
+    feat=0.2,
+    min_data_split_val=2,
+    seed_val=0,
+    job=-1,
+):
+    model = RandomForestClassifier(
+        n_estimators=rounds,
+        max_depth=depth,
+        min_samples_split=min_data_split_val,
+        min_samples_leaf=leaf,
+        max_features=feat,
+        n_jobs=job,
+        random_state=seed_val,
+    )
+    model.fit(train_X, train_y)
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
+
+    test_preds2 = 0
+    if test_X2 is not None:
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
+
     test_loss = 0
     if test_y is not None:
         train_loss = metrics.roc_auc_score(train_y, train_preds)
@@ -354,84 +514,93 @@ def runRF(train_X, train_y, test_X, test_y=None, test_X2=None, rounds=100, depth
         print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
 
+
 ### Running Logistic Regression
-def runLR(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, penalty ='l1'):
+def runLR(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, penalty="l1"):
     model = LogisticRegression(C=C, penalty=penalty, n_jobs=-1)
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
 
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
     test_loss = 0
-    
+
     train_loss = metrics.roc_auc_score(train_y, train_preds)
     test_loss = metrics.roc_auc_score(test_y, test_preds)
     print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
+
 
 ### Running Decision Tree
-def runDT(train_X, train_y, test_X, test_y=None, test_X2=None, criterion='gini', 
-          depth=None, min_split=2, min_leaf=1):
+def runDT(
+    train_X,
+    train_y,
+    test_X,
+    test_y=None,
+    test_X2=None,
+    criterion="gini",
+    depth=None,
+    min_split=2,
+    min_leaf=1,
+):
     model = DecisionTreeClassifier(
-                                    criterion = criterion, 
-                                    max_depth = depth, 
-                                    min_samples_split = min_split, 
-                                    min_samples_leaf=min_leaf)
+        criterion=criterion,
+        max_depth=depth,
+        min_samples_split=min_split,
+        min_samples_leaf=min_leaf,
+    )
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
 
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
-    
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
+
     test_loss = 0
-    
+
     train_loss = metrics.roc_auc_score(train_y, train_preds)
     test_loss = metrics.roc_auc_score(test_y, test_preds)
     print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
-    
+
+
 ### Running K-Nearest Neighbour
-def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None,
-           neighbors=5, job = -1):
-    model = KNeighborsClassifier(
-                                n_neighbors=neighbors, 
-                                n_jobs=job)
+def runKNN(train_X, train_y, test_X, test_y=None, test_X2=None, neighbors=5, job=-1):
+    model = KNeighborsClassifier(n_neighbors=neighbors, n_jobs=job)
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
 
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
-    
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
+
     test_loss = 0
-    
+
     train_loss = metrics.roc_auc_score(train_y, train_preds)
     test_loss = metrics.roc_auc_score(test_y, test_preds)
     print("Train and Test loss : ", train_loss, test_loss)
     return test_preds, test_loss, test_preds2, model
+
 
 ### Running SVM
-def runSVC(train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, 
-           kernel_choice = 'rbf'):
-    model = SVC(
-                C=C, 
-                kernel=kernel_choice, 
-                probability=True)
+def runSVC(
+    train_X, train_y, test_X, test_y=None, test_X2=None, C=1.0, kernel_choice="rbf"
+):
+    model = SVC(C=C, kernel=kernel_choice, probability=True)
     model.fit(train_X, train_y)
-    train_preds = model.predict_proba(train_X)[:,1]
-    test_preds = model.predict_proba(test_X)[:,1]
+    train_preds = model.predict_proba(train_X)[:, 1]
+    test_preds = model.predict_proba(test_X)[:, 1]
 
     test_preds2 = 0
     if test_X2 is not None:
-        test_preds2 = model.predict_proba(test_X2)[:,1]
-    
+        test_preds2 = model.predict_proba(test_X2)[:, 1]
+
     test_loss = 0
-    
+
     train_loss = metrics.roc_auc_score(train_y, train_preds)
     test_loss = metrics.roc_auc_score(test_y, test_preds)
     print("Train and Test loss : ", train_loss, test_loss)
