@@ -50,7 +50,7 @@ def do_data_profiling(df, filename):
         - HTML file with data profiling summary
     '''
     profile = pandas_profiling.ProfileReport(df)
-    profile.to_file(outputfile = filename)
+    profile.to_file(output_file = filename)
     print("Data profiling done")
 
 def missing_value_analysis(df):
